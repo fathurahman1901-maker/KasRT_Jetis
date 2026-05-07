@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>KasRT Jetis – Smart Jimpitan Digital</title>
+    
+    <!-- Bootstrap 5 + Icons + Fonts + Chart.js -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Library PDF baru (jspdf + autotable) - lebih andal daripada html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- CSS Eksternal -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="gradient-header text-white shadow-lg no-print">
+    <div class="container py-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h3 fw-bold mb-1"><i class="bi bi-house-door-fill me-2"></i>KasRT Digital</h1>
+                <p class="mb-0 opacity-90 fw-medium">Smart Jimpitan <span class="mx-2">·</span> Mudah & Cepat</p>
+                <p class="mb-0 small fw-semibold mt-1">Desa Jetis RT 013 RW 005 | Kemangkon Purbalingga</p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end">
+                <div class="bg-white text-dark rounded-pill px-4 py-2 shadow-sm fw-bold fs-5 d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-cash-stack text-primary fs-5"></i> 
+                    <span id="totalKasBadge">Rp 0</span>
+                </div>
+                <!-- Tombol Dark Mode -->
+                <button id="darkModeToggle" class="btn btn-light rounded-pill shadow-sm" style="background: rgba(255,255,255,0.2); border: none;">
+                    <i class="bi bi-moon-fill"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="container my-5">
+    <!-- Setting Laporan PDF -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-glass p-3 p-md-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold text-secondary"><i class="bi bi-person-vcard me-1"></i> Nama Penarik *</label>
+                        <input type="text" class="form-control rounded-pill" id="globalNamaPenarik" placeholder="Contoh: Bapak Slamet Riyadi">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold text-secondary"><i class="bi bi-calendar3 me-1"></i> Tanggal Laporan *</label>
+                        <input type="date" class="form-control rounded-pill" id="globalTanggalLaporan">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-secondary rounded-pill w-100" id="resetSettingsBtn"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORM TAMBAH JIMPITAN -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card-glass p-4">
+                <h5 class="fw-bold mb-3" style="color: var(--primary-dark);"><i class="bi bi-journal-plus me-2"></i>Catat Jimpitan Baru</h5>
+                <form id="jimpitanForm">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">🏷️ No Jimpitan / Nama KK *</label>
+                            <input type="text" class="form-control rounded-pill" id="noJimpitan" placeholder="contoh: J1 - Pak Ahmad, RT 02">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">✅ Status *</label>
+                            <select class="form-select rounded-pill" id="status">
+                                <option value="">Pilih Status</option>
+                                <option value="Isi">💰 Isi (Membayar)</option>
+                                <option value="Kosong">📭 Kosong (Belum)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">💵 Nominal (Rp)</label>
+                            <input type="number" class="form-control rounded-pill" id="nominal" min="0" value="0" disabled>
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex flex-wrap gap-3">
+                        <button type="submit" class="btn btn-primary-gradient btn-modern px-5"><i class="bi bi-save-fill me-1"></i> Simpan</button>
+                        <button type="button" class="btn btn-outline-secondary btn-modern px-4" id="resetAll"><i class="bi bi-trash3 me-1"></i> Hapus Semua</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTER + SORTING + SEARCH -->
+    <div class="row mb-4 g-3 align-items-center">
+        <div class="col-md-4">
+            <div class="input-group rounded-pill shadow-sm bg-white border">
+                <span class="input-group-text bg-transparent border-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control border-0 bg-transparent rounded-pill" id="searchInput" placeholder="Cari No Jimpitan...">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select rounded-pill bg-white" id="filterStatus">
+                <option value="semua">📊 Semua Data</option>
+                <option value="Isi">✅ Sudah Bayar (Isi)</option>
+                <option value="Kosong">❌ Belum Bayar (Kosong)</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-blue rounded-pill flex-fill" id="sortAscBtn"><i class="bi bi-sort-alpha-up"></i> Urut A→Z</button>
+                <button class="btn btn-outline-blue rounded-pill flex-fill" id="sortDescBtn"><i class="bi bi-sort-alpha-down"></i> Urut Z→A</button>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-success btn-modern w-100" id="exportPDF" style="background: #2563eb;"><i class="bi bi-file-pdf-fill me-1"></i> Export PDF</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD CHART & STATS -->
+    <div class="row mb-4">
+        <div class="col-lg-7 mb-3 mb-lg-0">
+            <div class="card-glass p-3 h-100">
+                <h6 class="fw-semibold mb-2" style="color:var(--primary-dark);"><i class="bi bi-pie-chart-fill me-1"></i> Ringkasan Partisipasi Warga</h6>
+                <div class="row align-items-center">
+                    <div class="col-sm-6 chart-wrapper">
+                        <canvas id="statusChart" style="max-height: 170px; width: 100%;"></canvas>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex justify-content-around gap-3">
+                            <div class="text-center p-2 rounded-4" style="background: rgba(37,99,235,0.1);"><i class="bi bi-check-circle-fill text-primary"></i> <strong>Isi</strong><br><span class="fs-5 fw-bold text-primary" id="chartBayarCount">0</span></div>
+                            <div class="text-center p-2 rounded-4" style="background: rgba(220,38,38,0.1);"><i class="bi bi-x-circle-fill text-danger"></i> <strong>Kosong</strong><br><span class="fs-5 fw-bold text-danger" id="chartKosongCount">0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card-glass p-3 h-100 total-kas-card d-flex align-items-center justify-content-between">
+                <div>
+                    <small class="text-secondary fw-semibold"><i class="bi bi-graph-up"></i> TOTAL KAS TERKUMPUL</small>
+                    <h2 class="fw-extrabold mb-0 text-primary-dark" id="totalKasStat">Rp 0</h2>
+                    <small class="text-muted" id="rataRataInfo">Rata-rata per pembayar: Rp 0</small>
+                </div>
+                <i class="bi bi-calculator-fill fs-1 text-primary opacity-50"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABEL DATA -->
+    <div class="card-glass p-0 overflow-hidden">
+        <div class="px-4 py-3 border-bottom" style="background: #f8fafc;">
+            <h5 class="fw-semibold mb-0"><i class="bi bi-table me-2" style="color:#2563eb;"></i>Daftar Jimpitan Warga</h5>
+        </div>
+        <div class="table-responsive p-3">
+            <table class="table table-custom w-100">
+                <thead>
+                    <tr>
+                        <th width="60">No</th>
+                        <th>No Jimpitan / KK</th>
+                        <th width="130">Status</th>
+                        <th class="text-end" width="150">Nominal (Rp)</th>
+                        <th width="160" class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <td><td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-database-add fs-1 d-block opacity-50"></i> Kosong, silakan tambah data jimpitan</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="bg-white px-4 py-4 border-top">
+            <div class="row g-3 text-center">
+                <div class="col-4 col-md-3">
+                    <div class="stat-card"><span class="fw-bold fs-5 text-primary" id="totalData">0</span><br><small>Total Data</small></div>
+                </div>
+                <div class="col-4 col-md-3">
+                    <div class="stat-card"><span class="fw-bold fs-5 text-success" id="totalBayar">0</span><br><small>Sudah Bayar</small></div>
+                </div>
+                <div class="col-4 col-md-3">
+                    <div class="stat-card"><span class="fw-bold fs-5 text-danger" id="totalBelum">0</span><br><small>Belum Bayar</small></div>
+                </div>
+                <div class="col-12 col-md-3">
+                    <div class="stat-card bg-light"><span class="fw-bold fs-5 text-dark" id="totalKasRingkasan">Rp 0</span><br><small>Total Kas</small></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="bg-dark text-white-50 py-4 mt-5 no-print">
+    <div class="container text-center">
+        <p class="mb-0 small">KasRT Jetis — Digitalisasi Jimpitan RT 013 RW 005 | Mudah & Cepat</p>
+    </div>
+</footer>
+
+<!-- MODAL EDIT -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header" style="background: #2563eb; color: white; border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Edit Data Jimpitan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editIndex">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">🏷️ No Jimpitan / KK</label>
+                        <input type="text" class="form-control rounded-pill" id="editNoJimpitan" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">✅ Status</label>
+                        <select class="form-select rounded-pill" id="editStatus">
+                            <option value="Isi">💰 Isi (Membayar)</option>
+                            <option value="Kosong">📭 Kosong</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">💵 Nominal (Rp)</label>
+                        <input type="number" class="form-control rounded-pill" id="editNominal" min="0">
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary-gradient rounded-pill px-4"><i class="bi bi-check-lg"></i> Perbarui</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript Eksternal -->
+<script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
